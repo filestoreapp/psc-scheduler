@@ -110,13 +110,22 @@ def ig_post(entry):
     log(f"IG container {container_id}")
 
     # 2. Upload the video bytes to the resumable URI.
+    # Read the whole file into memory so requests sends a Content-Length
+    # header: streaming a file object uses chunked transfer encoding,
+    # which the rupload endpoint rejects with 400 Bad Request.
     with open(path, "rb") as f:
-        up = requests.post(
-            upload_uri,
-            data=f,
-            headers={"offset": "0", "file_size": str(size)},
-            timeout=300,
-        )
+        video_bytes = f.read()
+    up = requests.post(
+        upload_uri,
+        data=video_bytes,
+        headers={
+            "Authorization": f"OAuth {IG_TOKEN}",
+            "offset": "0",
+            "file_size": str(size),
+            "Content-Type": "video/mp4",
+        },
+        timeout=300,
+    )
     up.raise_for_status()
     log("IG bytes uploaded")
 
